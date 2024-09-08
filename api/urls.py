@@ -1,9 +1,14 @@
 from django.urls import path, include
-from api.views import RegisterView
+from api.views import RegisterView, UsersView
+from rest_framework.routers import DefaultRouter
 
 app_name = 'api'
 
+router = DefaultRouter()
+router.register(r'get_active_users', UsersView, basename='active-users')
+
 urlpatterns = [
-    # path('log_in/',),
-    path('register/', RegisterView.as_view(), name='register')
-]
+    path('register/', RegisterView.as_view(), name='register'),
+    path('', include(router.urls)),
+
+]   

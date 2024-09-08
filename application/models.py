@@ -30,3 +30,9 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'User'
         verbose_name_plural = 'Users'
+
+
+class Comment(models.Model):
+    comment = models.CharField(max_length=120, null=True)
+    creator = models.ForeignKey(to=User, on_delete=models.CASCADE)
+    created = models.DateTimeField(auto_now_add=True)

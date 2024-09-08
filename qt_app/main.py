@@ -1,99 +1,134 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QFormLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QFormLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QLabel, QMessageBox
+from request import get_token, get_active_users, register
+
+# Comment window after login/registration
+class CommentWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle('Add a Comment')
+        self.setGeometry(100, 100, 400, 300)
+
+        # Layout for the comment form
+        self.layout = QVBoxLayout()
+
+        self.comment_input = QLineEdit(self)
+        self.layout.addWidget(QLabel('Add your comment:'))
+        self.layout.addWidget(self.comment_input)
+
+        # Submit button
+        self.submit_button = QPushButton('Submit Comment', self)
+        self.submit_button.clicked.connect(self.submit_comment)
+        self.layout.addWidget(self.submit_button)
+
+        # Setting layout
+        self.setLayout(self.layout)
+
+    def submit_comment(self):
+        comment = self.comment_input.text()
+        print(f'Comment Submitted: {comment}')
+        # Here you can add logic to send the comment somewhere
 
 
+# Main application for login and registration
 class SimpleApp(QWidget):
     def __init__(self):
         super().__init__()
 
-        # Настройки окна
+        # Main window for login/signup
         self.setWindowTitle('UsersCrud')
         self.showMaximized()
 
-        # Основной вертикальный макет
+        # Main layout
         self.main_layout = QVBoxLayout()
 
-        # Создаем форму для email и password
+        # Creating the form for email and password
         self.form_layout = QFormLayout()
 
-        # Поле для ввода email
+        # Email input
         self.email_input = QLineEdit(self)
         self.form_layout.addRow('Enter your email:', self.email_input)
 
-        # Поле для ввода пароля
+        # Password input
         self.password_input = QLineEdit(self)
-        self.password_input.setEchoMode(QLineEdit.Password)  # Скрытие ввода для пароля
+        self.password_input.setEchoMode(QLineEdit.Password)  # Hide input for the password
         self.form_layout.addRow('Enter your password:', self.password_input)
 
-        # Добавляем форму в основной макет
+        # Confirm password input (for registration)
+        self.confirm_password_input = QLineEdit(self)
+        self.confirm_password_input.setEchoMode(QLineEdit.Password)  # Hide input for the password
+
+        # Add form to main layout
         self.main_layout.addLayout(self.form_layout)
 
-        # Пространство сверху и снизу для центровки формы
+        # Spacer items for centering the form
         spacer_top = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
         spacer_bottom = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
-        # Добавляем пространство сверху
         self.main_layout.addItem(spacer_top)
 
-        # Кнопка Submit
-        self.submit_button = QPushButton('Submit', self)
-        self.submit_button.clicked.connect(self.on_submit)
-        self.main_layout.addWidget(self.submit_button)
+        # Log In button
+        self.login_button = QPushButton('Log In', self)
+        self.login_button.clicked.connect(self.on_login)
+        self.main_layout.addWidget(self.login_button)
 
-        # Кнопка Sign Up (добавлена под кнопкой Submit)
-        self.signup_button = QPushButton('Sign up', self)
+        # Sign Up button
+        self.signup_button = QPushButton('Sign Up', self)
         self.signup_button.clicked.connect(self.on_signup)
         self.main_layout.addWidget(self.signup_button)
 
-        # Добавляем пространство снизу
         self.main_layout.addItem(spacer_bottom)
 
-        # Устанавливаем основной макет в окно
         self.setLayout(self.main_layout)
 
-        # Поле для подтверждения пароля (по умолчанию скрыто)
-        self.confirm_password_input = QLineEdit(self)
-        self.confirm_password_input.setEchoMode(QLineEdit.Password)
-
-    # Метод для обработки нажатия кнопки Submit
-    def on_submit(self):
+    def on_login(self):
         email = self.email_input.text()
         password = self.password_input.text()
 
-        # Если форма регистрации (Sign up), проверяем подтверждение пароля
-        if self.confirm_password_input.isVisible():
-            confirm_password = self.confirm_password_input.text()
-            if password != confirm_password:
-                print("Пароли не совпадают!")
-            else:
-                print(f'Registered with Email: {email}, Password: {password}')
+        success, token = get_token(email, password)
+        if success:
+            self.show_message('Login successful!', f'Token: {token}')
+            self.open_comment_window()
         else:
-            print(f'Logged in with Email: {email}, Password: {password}')
+            self.show_message('Login failed!', token)
 
-    # Метод для обработки нажатия кнопки Sign Up
     def on_signup(self):
-        # Добавляем поле для подтверждения пароля
-        self.form_layout.addRow('Confirm your password:', self.confirm_password_input)
-        self.confirm_password_input.show()
+        # Show confirm password field when signing up
+        if not self.confirm_password_input.isVisible():
+            self.form_layout.addRow('Confirm your password:', self.confirm_password_input)
+            self.confirm_password_input.show()
+        else:
+            email = self.email_input.text()
+            password = self.password_input.text()
+            confirm_password = self.confirm_password_input.text()
 
-        # Меняем текст кнопки Submit на "Register"
-        self.submit_button.setText('Register')
+            if password != confirm_password:
+                self.show_message('Registration failed!', 'Passwords do not match!')
+            else:
+                success, result = register(email, password, confirm_password)
+                if success:
+                    self.show_message('Registration successful!', result)
+                    self.open_comment_window()
+                else:
+                    self.show_message('Registration failed!', result)
 
-        # Скрываем кнопку Sign Up
-        self.signup_button.hide()
+    def open_comment_window(self):
+        self.comment_window = CommentWindow()
+        self.comment_window.show()
+
+    def show_message(self, title, message):
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Information)
+        msg_box.setText(message)
+        msg_box.setWindowTitle(title)
+        msg_box.exec_()
 
 
 def main():
-    # Создаем приложение
     app = QApplication(sys.argv)
-
-    # Создаем объект окна
     window = SimpleApp()
-
-    # Показываем окно
     window.show()
-
-    # Запускаем цикл обработки событий
     sys.exit(app.exec_())
 
 
