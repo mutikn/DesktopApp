@@ -1,13 +1,9 @@
 from django.urls import path, include
-from api.views import UserApiView
-
-from rest_framework import routers
-
-router = routers.DefaultRouter()
-router.register(r'', UserApiView)
+from api.views import RegisterView
 
 app_name = 'api'
 
 urlpatterns = [
-    path('', include(router.urls))
+    # path('log_in/',),
+    path('register/', RegisterView.as_view(), name='register')
 ]
