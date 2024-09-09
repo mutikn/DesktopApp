@@ -44,3 +44,16 @@ def get_active_users(token):
         list_of_active_users.append(users.get('email'))
 
     return list_of_active_users
+
+
+def get_comments(token):
+    get_url= f'{DOMAIN_NAME}comments/'
+
+    response = requests.get(get_url, headers={
+        'Authorization': f'Token {token}'
+    })
+    
+    return response.json()
+
+
+print(get_comments('04855225e151f4e753860a8cfb75fd7f7e6aeba6'))
