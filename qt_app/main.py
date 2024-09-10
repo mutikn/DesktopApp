@@ -1,6 +1,9 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QFormLayout, QPushButton, QLineEdit, QSpacerItem, QSizePolicy, QLabel, QMessageBox
-from request import get_token, get_active_users, register
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QFormLayout, QPushButton,
+    QLineEdit, QSpacerItem, QSizePolicy, QLabel, QMessageBox
+)
+from request import get_token, register  # Импортируем функции из request.py
 
 # Comment window after login/registration
 class CommentWindow(QWidget):
@@ -58,6 +61,10 @@ class SimpleApp(QWidget):
         # Confirm password input (for registration)
         self.confirm_password_input = QLineEdit(self)
         self.confirm_password_input.setEchoMode(QLineEdit.Password)  # Hide input for the password
+        self.confirm_password_label = QLabel('Confirm your password:')  # Create label for confirm password
+        self.form_layout.addRow(self.confirm_password_label, self.confirm_password_input)
+        self.confirm_password_input.hide()  # Initially hidden
+        self.confirm_password_label.hide()  # Hide the label as well
 
         # Add form to main layout
         self.main_layout.addLayout(self.form_layout)
@@ -68,50 +75,66 @@ class SimpleApp(QWidget):
 
         self.main_layout.addItem(spacer_top)
 
-        # Log In button
-        self.login_button = QPushButton('Log In', self)
-        self.login_button.clicked.connect(self.on_login)
-        self.main_layout.addWidget(self.login_button)
+        # Log In/Sign Up button
+        self.submit_button = QPushButton('Log In', self)
+        self.submit_button.clicked.connect(self.on_submit)
+        self.main_layout.addWidget(self.submit_button)
 
-        # Sign Up button
-        self.signup_button = QPushButton('Sign Up', self)
-        self.signup_button.clicked.connect(self.on_signup)
-        self.main_layout.addWidget(self.signup_button)
+        # Toggle button for switching between login and registration
+        self.toggle_button = QPushButton('Register', self)
+        self.toggle_button.clicked.connect(self.toggle_form)
+        self.main_layout.addWidget(self.toggle_button)
 
         self.main_layout.addItem(spacer_bottom)
 
         self.setLayout(self.main_layout)
 
-    def on_login(self):
+        self.is_registration = False  # Initially in login mode
+
+    def on_submit(self):
         email = self.email_input.text()
         password = self.password_input.text()
 
-        success, token = get_token(email, password)
-        if success:
-            self.show_message('Login successful!', f'Token: {token}')
-            self.open_comment_window()
-        else:
-            self.show_message('Login failed!', token)
-
-    def on_signup(self):
-        # Show confirm password field when signing up
-        if not self.confirm_password_input.isVisible():
-            self.form_layout.addRow('Confirm your password:', self.confirm_password_input)
-            self.confirm_password_input.show()
-        else:
-            email = self.email_input.text()
-            password = self.password_input.text()
+        if self.is_registration:
+            # Handle Registration
             confirm_password = self.confirm_password_input.text()
 
             if password != confirm_password:
                 self.show_message('Registration failed!', 'Passwords do not match!')
+                return
+
+            success, result = register(email, password, confirm_password)
+            if success:
+                self.show_message('Registration successful!', result)
+                self.toggle_form()  # Switch back to login form after successful registration
             else:
-                success, result = register(email, password, confirm_password)
-                if success:
-                    self.show_message('Registration successful!', result)
-                    self.open_comment_window()
-                else:
-                    self.show_message('Registration failed!', result)
+                self.show_message('Registration failed!', result)
+
+        else:
+            # Handle Login
+            success, token = get_token(email, password)
+            if success:
+                self.show_message('Login successful!', f'Token: {token}')
+                self.open_comment_window()
+            else:
+                self.show_message('Login failed!', token)
+
+    def toggle_form(self):
+        """Toggle between login and registration form."""
+        if not self.is_registration:
+            # Switch to registration mode
+            self.confirm_password_input.show()
+            self.confirm_password_label.show()  # Show the label
+            self.submit_button.setText('Register')
+            self.toggle_button.setText('Log In')
+            self.is_registration = True
+        else:
+            # Switch to login mode
+            self.confirm_password_input.hide()  # Hide the confirm password field
+            self.confirm_password_label.hide()  # Hide the label
+            self.submit_button.setText('Log In')
+            self.toggle_button.setText('Register')
+            self.is_registration = False
 
     def open_comment_window(self):
         self.comment_window = CommentWindow()

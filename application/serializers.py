@@ -44,6 +44,7 @@ class UsersSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    creator_email = serializers.CharField(source='creator.email', read_only=True)
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -53,5 +54,5 @@ class CommentSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Comment
-        fields = ('id', 'comment', 'creator', 'created')
-        read_only_fields = ('creator',)
+        fields = ('id', 'comment', 'creator_email', 'created')
+        read_only_fields = ('creator_email',)

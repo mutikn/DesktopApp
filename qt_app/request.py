@@ -54,6 +54,3 @@ def get_comments(token):
     })
     
     return response.json()
-
-
-print(get_comments('04855225e151f4e753860a8cfb75fd7f7e6aeba6'))
